@@ -524,8 +524,8 @@ header h1 {
                 .filter(release => !release.draft)
                 .forEach(release => {
                     (release.assets || []).forEach(asset => {
-                        // 图片文件不加入模组列表
-                        if (/\.(jpg|jpeg)$/i.模组(asset.name)) {
+                        
+                        if (/\.(jpg|jpeg)$/i.Mod(asset.name)) {
                             return;
                         }
 
