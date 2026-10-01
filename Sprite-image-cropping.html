@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>精灵图裁剪器 · 精确帧尺寸</title>
+    <style>
+        /* 全局重置与字体 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            color: #1e293b;
+            line-height: 1.5;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+        }
+
+        /* 卡片风格 */
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            border: 1px solid #e9edf4;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.02), 0 2px 4px rgba(0, 0, 0, 0.02);
+            padding: 1.75rem 2rem;
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
+        }
+
+        /* 标题区域 */
+        .title-section {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.75rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .title-main h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #1e3a5f, #2b6e4f);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.3rem;
+            line-height: 1.2;
+        }
+
+        .title-main .sub {
+            color: #64748b;
+            font-size: 0.9rem;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .title-main .sub::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #2b6e4f;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        /* 按钮通用 */
+        button {
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.6rem 1.2rem;
+            border-radius: 40px;
+            border: 1px solid #dce2ec;
+            background: #ffffff;
+            color: #1e293b;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, transform 0.1s, box-shadow 0.15s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        button.primary {
+            background: #1e3a5f;
+            border-color: #1e3a5f;
+            color: white;
+        }
+
+        button.primary:hover {
+            background: #15304e;
+            border-color: #15304e;
+            box-shadow: 0 4px 12px rgba(30, 58, 95, 0.15);
+        }
+
+        button.danger {
+            background: #ffffff;
+            border-color: #fecaca;
+            color: #b91c1c;
+        }
+
+        button.danger:hover {
+            background: #fef2f2;
+            border-color: #fca5a5;
+        }
+
+        /* 文件操作栏 */
+        .file-actions {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .file-actions .label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #475569;
+            margin-right: 0.25rem;
+        }
+
+        /* 计数器 */
+        .counter-badge {
+            display: inline-flex;
+            align-items: center;
+            background: #eef2ff;
+            color: #1e3a5f;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 0.35rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #e0e7ff;
+        }
+
+        .counter-badge span {
+            font-weight: 700;
+            margin-left: 0.25rem;
+        }
+
+        /* 人物列表 */
+        .character-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0 1rem;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .character-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.2rem;
+            background: #ffffff;
+            border: 1px solid #edf2f7;
+            border-radius: 16px;
+            transition: border-color 0.15s, background 0.15s;
+        }
+
+        .character-item:hover {
+            border-color: #cbd5e1;
+            background: #fcfdff;
+        }
+
+        .character-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .character-avatar {
+            width: 36px;
+            height: 36px;
+            background: #eef2ff;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1e3a5f;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .character-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #0f172a;
+        }
+
+        .character-files {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .character-files span {
+            background: #f8fafc;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            border: 1px solid #eef2f6;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: #334155;
+        }
+
+        .remove-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.1rem;
+            padding: 0.4rem;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .remove-btn:hover {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 2.5rem 1rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+            background: #fafcff;
+            border-radius: 20px;
+            border: 1px dashed #dce2ec;
+        }
+
+        /* 提示框 */
+        .hint-box {
+            background: #f8fafc;
+            border-left: 4px solid #2b6e4f;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #475569;
+            margin: 1.25rem 0 0.5rem;
+            line-height: 1.7;
+        }
+
+        .hint-box strong {
+            color: #1e293b;
+            font-weight: 600;
+        }
+
+        /* 底部按钮组 */
+        .action-bar {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        /* 动画导出面板 */
+        .animation-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.25rem 0;
+        }
+
+        .form-row label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #334155;
+            min-width: 80px;
+        }
+
+        select, input[type="number"] {
+            font-family: inherit;
+            font-size: 0.9rem;
+            padding: 0.55rem 1rem;
+            border-radius: 40px;
+            border: 1px solid #dce2ec;
+            background: #ffffff;
+            color: #0f172a;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            min-width: 160px;
+        }
+
+        select:focus, input[type="number"]:focus {
+            border-color: #2b6e4f;
+            box-shadow: 0 0 0 3px rgba(43, 110, 79, 0.1);
+        }
+
+        .frame-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-left: 0.5rem;
+        }
+
+        /* 进度条 */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e9edf4;
+            border-radius: 10px;
+            margin: 0.75rem 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #2b6e4f;
+            border-radius: 10px;
+            transition: width 0.2s ease;
+        }
+
+        /* 状态文字 */
+        .status-text {
+            font-size: 0.85rem;
+            color: #475569;
+            margin-left: 0.75rem;
+        }
+
+        .batch-status {
+            font-size: 0.85rem;
+            color: #2b6e4f;
+            margin-top: 0.5rem;
+            min-height: 1.2rem;
+        }
+
+        /* 按钮特殊背景 */
+        .btn-webm {
+            background: #0f172a;
+            border-color: #0f172a;
+            color: white;
+        }
+
+        .btn-webm:hover {
+            background: #1e293b;
+            border-color: #1e293b;
+        }
+
+        .btn-batch {
+            background: #334155;
+            border-color: #334155;
+            color: white;
+        }
+
+        .btn-batch:hover {
+            background: #1e293b;
+            border-color: #1e293b;
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            padding: 1rem 0 0.5rem;
+            border-top: 1px solid #eef2f6;
+        }
+
+        /* 加载浮层 */
+        .loading-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: #0f172a;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* 滚动条 */
+        .character-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .character-grid::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .character-grid::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .character-grid::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* 响应式 */
+        @media (max-width: 700px) {
+            body {
+                padding: 1rem 0.75rem;
+            }
+            .card {
+                padding: 1.25rem;
+                border-radius: 20px;
+            }
+            .title-main h1 {
+                font-size: 1.5rem;
+            }
+            .file-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .file-actions button {
+                justify-content: center;
+            }
+            .form-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+            select, input[type="number"] {
+                width: 100%;
+            }
+            .action-bar {
+                flex-direction: column;
+            }
+            .action-bar button {
+                width: 100%;
+            }
+            .character-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.js"></script>
+    <script>
+        if (typeof GIF !== 'undefined') {
+            GIF.workers = 2;
+            GIF.workerScript = 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js';
+        }
+    </script>
+</head>
+<body>
+<div class="container">
+    <!-- 主卡片 -->
+    <div class="card">
+        <div class="title-section">
+            <div class="title-main">
+                <h1>精灵图裁剪器</h1>
+                <div class="sub">精确帧尺寸 · 每帧使用自身 frameWidth × frameHeight</div>
+            </div>
+            <div class="counter-badge">
+                人物 <span id="charCount">0</span>
+            </div>
+        </div>
+
+        <!-- 导入操作 -->
+        <div class="file-actions">
+            <span class="label">导入</span>
+            <button id="addSingleBtn">逐个添加</button>
+            <button id="batchAddBtn" class="primary">批量多选</button>
+            <button id="uploadZipBtn">上传压缩包</button>
+            <button id="clearAllBtn" class="danger">清除全部</button>
+        </div>
+
+        <!-- 人物列表 -->
+        <div id="characterListContainer" class="character-grid">
+            <div class="empty-state">暂无人物，请通过上方按钮添加</div>
+        </div>
+
+        <!-- 提示 -->
+        <div class="hint-box">
+            <strong>操作提示</strong><br>
+            · 批量多选：按住 Ctrl/Shift 选中多组 XML+PNG（基础名相同）。<br>
+            · 上传压缩包：自动识别 ZIP 内所有 XML 和 PNG，按基础名配对。<br>
+            · 导出 ZIP：每张图片尺寸 = 该帧的 frameWidth × frameHeight。<br>
+            · 动画导出：为保证播放稳定，统一画布取最大 frame 尺寸。
+        </div>
+
+        <!-- 导出 ZIP -->
+        <div class="action-bar">
+            <button id="exportZipBtn" class="primary" style="background:#1e5a3a; border-color:#1e5a3a;">导出全部为 ZIP</button>
+        </div>
+    </div>
+
+    <!-- 动画导出 -->
+    <div class="card">
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.4rem; font-weight: 600; color: #0f172a; letter-spacing: -0.01em;">导出动画</h2>
+        </div>
+
+        <div class="animation-panel">
+            <div class="form-row">
+                <label>选择角色</label>
+                <select id="gifCharacterSelect"></select>
+            </div>
+            <div class="form-row">
+                <label>选择动作</label>
+                <select id="gifActionSelect" disabled>
+                    <option>请先选择角色</option>
+                </select>
+                <span id="frameCountInfo" class="frame-info"></span>
+            </div>
+            <div class="form-row">
+                <label>帧率 (fps)</label>
+                <input type="number" id="gifFps" value="24" step="1" min="1" max="60" style="width:120px;">
+            </div>
+            <div class="form-row">
+                <label>循环次数</label>
+                <input type="number" id="gifLoop" value="0" step="1" min="0" max="100" title="0表示无限循环" style="width:120px;">
+                <span style="font-size:0.8rem; color:#94a3b8;">0 = 无限循环（仅GIF）</span>
+            </div>
+
+            <div class="progress-bar" id="gifProgressBar">
+                <div class="progress-fill" id="gifProgressFill"></div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem;">
+                <button id="generateGifBtn" class="primary">导出 GIF</button>
+                <button id="generateWebmBtn" class="btn-webm">导出 WebM</button>
+                <button id="batchGifBtn" class="btn-batch">导出全部动画 (WebM)</button>
+                <span id="gifStatus" class="status-text"></span>
+            </div>
+            <div id="batchGifStatus" class="batch-status"></div>
+        </div>
+    </div>
+
+    <footer>
+        本工具在浏览器本地运行，图片不会被上传 · 导出图片尺寸严格遵循 XML 中的 frameWidth/frameHeight
+    </footer>
+</div>
+
+<script>
+    // ---------- 工具函数 ----------
+    function rotateImageData(srcImageData, srcWidth, srcHeight) {
+        const dstWidth = srcHeight;
+        const dstHeight = srcWidth;
+        const dstImageData = new ImageData(dstWidth, dstHeight);
+        for (let u = 0; u < srcWidth; u++) {
+            for (let v = 0; v < srcHeight; v++) {
+                const srcIdx = (v * srcWidth + u) * 4;
+                const dstX = v;
+                const dstY = srcWidth - 1 - u;
+                const dstIdx = (dstY * dstWidth + dstX) * 4;
+                for (let c = 0; c < 4; c++) {
+                    dstImageData.data[dstIdx + c] = srcImageData.data[srcIdx + c];
+                }
+            }
+        }
+        return dstImageData;
+    }
+
+    function ensurePngExtension(filename) {
+        if (!filename.toLowerCase().endsWith('.png')) {
+            return filename + '.png';
+        }
+        return filename;
+    }
+
+    function getActionName(costumeName) {
+        let base = costumeName.replace(/\.[^/.]+$/, '');
+        return base.replace(/\d+$/, '');
+    }
+
+    async function parseXmlFile(xmlFile) {
+        const xmlText = await xmlFile.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        const textureAtlas = xmlDoc.documentElement;
+        if (textureAtlas.tagName !== 'TextureAtlas') {
+            throw new Error('XML根元素不是 TextureAtlas');
+        }
+        const subTextures = Array.from(textureAtlas.getElementsByTagName('SubTexture'));
+        if (subTextures.length === 0) throw new Error('没有找到 SubTexture');
+        return subTextures;
+    }
+
+    function getFrameSize(elem) {
+        let width = parseFloat(elem.getAttribute('width'));
+        let height = parseFloat(elem.getAttribute('height'));
+        if (isNaN(width) || width <= 0) width = 0;
+        if (isNaN(height) || height <= 0) height = 0;
+
+        let frameWidth = elem.hasAttribute('frameWidth') ? parseFloat(elem.getAttribute('frameWidth')) : width;
+        let frameHeight = elem.hasAttribute('frameHeight') ? parseFloat(elem.getAttribute('frameHeight')) : height;
+        if (isNaN(frameWidth) || frameWidth <= 0) frameWidth = width;
+        if (isNaN(frameHeight) || frameHeight <= 0) frameHeight = height;
+
+        return {
+            frameWidth: Math.round(frameWidth),
+            frameHeight: Math.round(frameHeight),
+            valid: width > 0 && height > 0
+        };
+    }
+
+    async function getUnifiedCanvasSize(xmlFile, pngFile) {
+        const subTextures = await parseXmlFile(xmlFile);
+        const pngImage = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(pngFile);
+        });
+        let maxFrameWidth = 0, maxFrameHeight = 0;
+        for (const elem of subTextures) {
+            const { frameWidth, frameHeight, valid } = getFrameSize(elem);
+            if (!valid) continue;
+            maxFrameWidth = Math.max(maxFrameWidth, frameWidth);
+            maxFrameHeight = Math.max(maxFrameHeight, frameHeight);
+        }
+        URL.revokeObjectURL(pngImage.src);
+        if (maxFrameWidth === 0 || maxFrameHeight === 0) throw new Error('没有有效的子纹理');
+        return { width: maxFrameWidth, height: maxFrameHeight };
+    }
+
+    async function getFramesForActionUniform(xmlFile, pngFile, actionName, canvasWidth, canvasHeight) {
+        const subTextures = await parseXmlFile(xmlFile);
+        const pngImage = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(pngFile);
+        });
+        const filtered = [];
+        for (const elem of subTextures) {
+            let name = elem.getAttribute('name');
+            const action = getActionName(name);
+            if (action === actionName) {
+                filtered.push(elem);
+            }
+        }
+        filtered.sort((a,b) => {
+            const nameA = a.getAttribute('name');
+            const nameB = b.getAttribute('name');
+            return nameA.localeCompare(nameB, undefined, { numeric: true });
+        });
+
+        const frames = [];
+        for (const elem of filtered) {
+            const widthAttr = parseFloat(elem.getAttribute('width'));
+            const heightAttr = parseFloat(elem.getAttribute('height'));
+            if (isNaN(widthAttr) || widthAttr <= 0 || isNaN(heightAttr) || heightAttr <= 0) continue;
+
+            const x = parseFloat(elem.getAttribute('x'));
+            const y = parseFloat(elem.getAttribute('y'));
+            let width = parseFloat(elem.getAttribute('width'));
+            let height = parseFloat(elem.getAttribute('height'));
+            const rotated = elem.getAttribute('rotated') === 'true';
+
+            let frameX = elem.hasAttribute('frameX') ? parseFloat(elem.getAttribute('frameX')) : 0;
+            let frameY = elem.hasAttribute('frameY') ? parseFloat(elem.getAttribute('frameY')) : 0;
+            let frameWidth = elem.hasAttribute('frameWidth') ? parseFloat(elem.getAttribute('frameWidth')) : width;
+            let frameHeight = elem.hasAttribute('frameHeight') ? parseFloat(elem.getAttribute('frameHeight')) : height;
+
+            const intX = Math.round(x);
+            const intY = Math.round(y);
+            const intWidth = Math.round(width);
+            const intHeight = Math.round(height);
+            const intFrameX = Math.round(frameX);
+            const intFrameY = Math.round(frameY);
+            const intFrameWidth = Math.round(frameWidth);
+            const intFrameHeight = Math.round(frameHeight);
+
+            const posX = -intFrameX;
+            const posY = -intFrameY;
+
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = intWidth;
+            cropCanvas.height = intHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+            cropCtx.drawImage(pngImage, intX, intY, intWidth, intHeight, 0, 0, intWidth, intHeight);
+
+            let finalImageData;
+            if (rotated) {
+                const cropImageData = cropCtx.getImageData(0, 0, intWidth, intHeight);
+                finalImageData = rotateImageData(cropImageData, intWidth, intHeight);
+            } else {
+                finalImageData = cropCtx.getImageData(0, 0, intWidth, intHeight);
+            }
+
+            const unifiedCanvas = document.createElement('canvas');
+            unifiedCanvas.width = canvasWidth;
+            unifiedCanvas.height = canvasHeight;
+            const unifiedCtx = unifiedCanvas.getContext('2d');
+            unifiedCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+            unifiedCtx.fillStyle = 'rgba(0,0,0,0)';
+            unifiedCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+            const frameInCanvasX = (canvasWidth - intFrameWidth) / 2;
+            const frameInCanvasY = (canvasHeight - intFrameHeight) / 2;
+            const drawX = frameInCanvasX + posX;
+            const drawY = frameInCanvasY + posY;
+
+            if (rotated) {
+                const rotatedWidth = intHeight;
+                const rotatedHeight = intWidth;
+                const rotatedCanvas = document.createElement('canvas');
+                rotatedCanvas.width = rotatedWidth;
+                rotatedCanvas.height = rotatedHeight;
+                rotatedCanvas.getContext('2d').putImageData(finalImageData, 0, 0);
+                unifiedCtx.drawImage(rotatedCanvas, drawX, drawY, rotatedWidth, rotatedHeight);
+            } else {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = intWidth;
+                tempCanvas.height = intHeight;
+                tempCanvas.getContext('2d').putImageData(finalImageData, 0, 0);
+                unifiedCtx.drawImage(tempCanvas, drawX, drawY, intWidth, intHeight);
+            }
+            frames.push(unifiedCanvas);
+        }
+        URL.revokeObjectURL(pngImage.src);
+        return frames;
+    }
+
+    async function processCharacter(xmlFile, pngFile, JSZipLib, zip) {
+        const subTextures = await parseXmlFile(xmlFile);
+        const pngImage = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = URL.createObjectURL(pngFile);
+        });
+        const roleName = pngFile.name.replace(/\.[^/.]+$/, '');
+
+        for (const elem of subTextures) {
+            let name = elem.getAttribute('name');
+            name = ensurePngExtension(name);
+            const widthAttr = parseFloat(elem.getAttribute('width'));
+            const heightAttr = parseFloat(elem.getAttribute('height'));
+            if (isNaN(widthAttr) || widthAttr <= 0 || isNaN(heightAttr) || heightAttr <= 0) continue;
+
+            const x = parseFloat(elem.getAttribute('x'));
+            const y = parseFloat(elem.getAttribute('y'));
+            let width = parseFloat(elem.getAttribute('width'));
+            let height = parseFloat(elem.getAttribute('height'));
+            const rotated = elem.getAttribute('rotated') === 'true';
+
+            let frameX = elem.hasAttribute('frameX') ? parseFloat(elem.getAttribute('frameX')) : 0;
+            let frameY = elem.hasAttribute('frameY') ? parseFloat(elem.getAttribute('frameY')) : 0;
+            let frameWidth = elem.hasAttribute('frameWidth') ? parseFloat(elem.getAttribute('frameWidth')) : width;
+            let frameHeight = elem.hasAttribute('frameHeight') ? parseFloat(elem.getAttribute('frameHeight')) : height;
+
+            const intX = Math.round(x);
+            const intY = Math.round(y);
+            const intWidth = Math.round(width);
+            const intHeight = Math.round(height);
+            const intFrameX = Math.round(frameX);
+            const intFrameY = Math.round(frameY);
+            const intFrameWidth = Math.round(frameWidth);
+            const intFrameHeight = Math.round(frameHeight);
+
+            const posX = -intFrameX;
+            const posY = -intFrameY;
+
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = intWidth;
+            cropCanvas.height = intHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+            cropCtx.drawImage(pngImage, intX, intY, intWidth, intHeight, 0, 0, intWidth, intHeight);
+
+            let finalImageData;
+            if (rotated) {
+                const cropImageData = cropCtx.getImageData(0, 0, intWidth, intHeight);
+                finalImageData = rotateImageData(cropImageData, intWidth, intHeight);
+            } else {
+                finalImageData = cropCtx.getImageData(0, 0, intWidth, intHeight);
+            }
+
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = intFrameWidth;
+            finalCanvas.height = intFrameHeight;
+            const finalCtx = finalCanvas.getContext('2d');
+            finalCtx.clearRect(0, 0, intFrameWidth, intFrameHeight);
+            finalCtx.fillStyle = 'rgba(0,0,0,0)';
+            finalCtx.fillRect(0, 0, intFrameWidth, intFrameHeight);
+
+            if (rotated) {
+                const rotatedWidth = intHeight;
+                const rotatedHeight = intWidth;
+                const rotatedCanvas = document.createElement('canvas');
+                rotatedCanvas.width = rotatedWidth;
+                rotatedCanvas.height = rotatedHeight;
+                rotatedCanvas.getContext('2d').putImageData(finalImageData, 0, 0);
+                finalCtx.drawImage(rotatedCanvas, posX, posY, rotatedWidth, rotatedHeight);
+            } else {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = intWidth;
+                tempCanvas.height = intHeight;
+                tempCanvas.getContext('2d').putImageData(finalImageData, 0, 0);
+                finalCtx.drawImage(tempCanvas, posX, posY, intWidth, intHeight);
+            }
+
+            const blob = await new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
+            const arrayBuffer = await blob.arrayBuffer();
+            const actionName = getActionName(name);
+            const fileName = `${roleName}/${actionName}/${name}`;
+            zip.file(fileName, arrayBuffer);
+        }
+        URL.revokeObjectURL(pngImage.src);
+    }
+
+    // ---------- UI 状态 ----------
+    let characterList = [];
+
+    const charListContainer = document.getElementById('characterListContainer');
+    const charCountSpan = document.getElementById('charCount');
+
+    function updateUI() {
+        charCountSpan.innerText = characterList.length;
+        if (characterList.length === 0) {
+            charListContainer.innerHTML = '<div class="empty-state">暂无人物，请通过上方按钮添加</div>';
+        } else {
+            charListContainer.innerHTML = '';
+            characterList.forEach((item, idx) => {
+                const roleName = item.pngFile.name.replace(/\.[^/.]+$/, '');
+                const card = document.createElement('div');
+                card.className = 'character-item';
+                card.innerHTML = `
+                    <div class="character-info">
+                        <div class="character-avatar">人</div>
+                        <div>
+                            <div class="character-name">${escapeHtml(roleName)}</div>
+                            <div class="character-files">
+                                <span>PNG：${escapeHtml(item.pngFile.name)}</span>
+                                <span>XML：${escapeHtml(item.xmlFile.name)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="remove-btn" data-idx="${idx}" title="移除">移除</button>
+                `;
+                charListContainer.appendChild(card);
+            });
+            document.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const idx = parseInt(btn.dataset.idx);
+                    if (!isNaN(idx)) {
+                        characterList.splice(idx, 1);
+                        updateUI();
+                        updateGifCharacterSelect();
+                    }
+                });
+            });
+        }
+        updateGifCharacterSelect();
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // ---------- 添加方式 ----------
+    function addSingle() {
+        let firstFile = null;
+        let secondFile = null;
+        const pickFirst = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xml,.png';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                firstFile = file;
+                pickSecond();
+            };
+            input.click();
+        };
+        const pickSecond = () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xml,.png';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                secondFile = file;
+                const ext1 = firstFile.name.split('.').pop().toLowerCase();
+                const ext2 = secondFile.name.split('.').pop().toLowerCase();
+                if ((ext1 === 'xml' && ext2 === 'png') || (ext1 === 'png' && ext2 === 'xml')) {
+                    let xmlFile, pngFile;
+                    if (ext1 === 'xml') { xmlFile = firstFile; pngFile = secondFile; }
+                    else { xmlFile = secondFile; pngFile = firstFile; }
+                    characterList.push({ xmlFile, pngFile });
+                    updateUI();
+                } else {
+                    alert('请选择一个XML和一个PNG文件配对');
+                }
+                firstFile = null; secondFile = null;
+            };
+            input.click();
+        };
+        pickFirst();
+    }
+
+    function batchAdd() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.accept = '.xml,.png';
+        input.onchange = (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+            const groups = new Map();
+            files.forEach(file => {
+                const base = file.name.replace(/\.[^/.]+$/, '');
+                if (!groups.has(base)) groups.set(base, []);
+                groups.get(base).push(file);
+            });
+            let added = 0;
+            for (const [base, groupFiles] of groups.entries()) {
+                const xmlFile = groupFiles.find(f => f.name.toLowerCase().endsWith('.xml'));
+                const pngFile = groupFiles.find(f => f.name.toLowerCase().endsWith('.png'));
+                if (xmlFile && pngFile) {
+                    characterList.push({ xmlFile, pngFile });
+                    added++;
+                } else {
+                    alert(`跳过 "${base}"：缺少 XML 或 PNG 文件`);
+                }
+            }
+            if (added > 0) updateUI();
+        };
+        input.click();
+    }
+
+    async function uploadZip() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.zip';
+        input.onchange = async (e) => {
+            const zipFile = e.target.files[0];
+            if (!zipFile) return;
+            const toast = document.createElement('div');
+            toast.className = 'loading-toast';
+            toast.innerText = '正在解析压缩包，请稍候...';
+            document.body.appendChild(toast);
+            try {
+                const JSZipLib = window.JSZip;
+                if (!JSZipLib) throw new Error('JSZip 库未加载');
+                const zipData = await zipFile.arrayBuffer();
+                const zip = await JSZipLib.loadAsync(zipData);
+                const files = [];
+                for (const [path, fileObj] of Object.entries(zip.files)) {
+                    if (fileObj.dir) continue;
+                    const name = path.split('/').pop();
+                    if (name.toLowerCase().endsWith('.xml') || name.toLowerCase().endsWith('.png')) {
+                        const blob = await fileObj.async('blob');
+                        const file = new File([blob], name, { type: blob.type });
+                        files.push(file);
+                    }
+                }
+                if (files.length === 0) {
+                    alert('压缩包中没有找到 XML 或 PNG 文件');
+                    return;
+                }
+                const groups = new Map();
+                files.forEach(file => {
+                    const base = file.name.replace(/\.[^/.]+$/, '');
+                    if (!groups.has(base)) groups.set(base, []);
+                    groups.get(base).push(file);
+                });
+                let added = 0;
+                for (const [base, groupFiles] of groups.entries()) {
+                    const xmlFile = groupFiles.find(f => f.name.toLowerCase().endsWith('.xml'));
+                    const pngFile = groupFiles.find(f => f.name.toLowerCase().endsWith('.png'));
+                    if (xmlFile && pngFile) {
+                        characterList.push({ xmlFile, pngFile });
+                        added++;
+                    } else {
+                        console.warn(`跳过 "${base}"：缺少 XML 或 PNG`);
+                    }
+                }
+                if (added > 0) {
+                    updateUI();
+                    alert(`成功从压缩包添加 ${added} 个人物`);
+                } else {
+                    alert('压缩包中未找到有效的 XML+PNG 配对');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('解析压缩包失败：' + err.message);
+            } finally {
+                toast.remove();
+            }
+        };
+        input.click();
+    }
+
+    function clearAll() {
+        if (characterList.length > 0 && confirm('确定要清除全部人物吗？')) {
+            characterList = [];
+            updateUI();
+        }
+    }
+
+    async function exportZip() {
+        if (characterList.length === 0) {
+            alert('请先添加至少一个人物');
+            return;
+        }
+        const toast = document.createElement('div');
+        toast.className = 'loading-toast';
+        toast.innerText = '正在处理图片，请稍候...';
+        document.body.appendChild(toast);
+        try {
+            const JSZipLib = window.JSZip;
+            if (!JSZipLib) throw new Error('JSZip 库未加载');
+            const mainZip = new JSZipLib();
+            for (let i = 0; i < characterList.length; i++) {
+                const { xmlFile, pngFile } = characterList[i];
+                toast.innerText = `处理中 (${i+1}/${characterList.length}) : ${pngFile.name}`;
+                await processCharacter(xmlFile, pngFile, JSZipLib, mainZip);
+            }
+            const content = await mainZip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '精灵图裁剪结果.zip';
+            a.click();
+            URL.revokeObjectURL(url);
+            alert(`导出成功！共 ${characterList.length} 个人物，ZIP 已下载。`);
+        } catch (err) {
+            console.error(err);
+            alert('处理失败：' + err.message);
+        } finally {
+            toast.remove();
+        }
+    }
+
+    // ---------- 动画导出 ----------
+    const gifCharacterSelect = document.getElementById('gifCharacterSelect');
+    const gifActionSelect = document.getElementById('gifActionSelect');
+    const gifFpsInput = document.getElementById('gifFps');
+    const gifLoopInput = document.getElementById('gifLoop');
+    const generateGifBtn = document.getElementById('generateGifBtn');
+    const generateWebmBtn = document.getElementById('generateWebmBtn');
+    const batchGifBtn = document.getElementById('batchGifBtn');
+    const gifStatus = document.getElementById('gifStatus');
+    const gifProgressBar = document.getElementById('gifProgressBar');
+    const gifProgressFill = document.getElementById('gifProgressFill');
+    const frameCountInfo = document.getElementById('frameCountInfo');
+    const batchGifStatusSpan = document.getElementById('batchGifStatus');
+
+    const actionSettings = new Map();
+
+    function getActionSettingsKey(charIdx, action) {
+        return `${charIdx}_${action}`;
+    }
+
+    function loadSettingsForAction(charIdx, action) {
+        const key = getActionSettingsKey(charIdx, action);
+        if (actionSettings.has(key)) {
+            const settings = actionSettings.get(key);
+            gifFpsInput.value = settings.fps;
+            gifLoopInput.value = settings.loop;
+        } else {
+            gifFpsInput.value = 24;
+            gifLoopInput.value = 0;
+        }
+    }
+
+    function saveSettingsForAction(charIdx, action) {
+        const key = getActionSettingsKey(charIdx, action);
+        const fps = parseInt(gifFpsInput.value);
+        const loop = parseInt(gifLoopInput.value);
+        if (!isNaN(fps) && !isNaN(loop)) {
+            actionSettings.set(key, { fps, loop });
+        }
+    }
+
+    function updateGifCharacterSelect() {
+        gifCharacterSelect.innerHTML = '<option value="">-- 请选择角色 --</option>';
+        characterList.forEach((item, idx) => {
+            const roleName = item.pngFile.name.replace(/\.[^/.]+$/, '');
+            const option = document.createElement('option');
+            option.value = idx;
+            option.textContent = roleName;
+            gifCharacterSelect.appendChild(option);
+        });
+        gifActionSelect.disabled = true;
+        gifActionSelect.innerHTML = '<option>请先选择角色</option>';
+        frameCountInfo.textContent = '';
+    }
+
+    gifCharacterSelect.addEventListener('change', async (e) => {
+        const idx = parseInt(e.target.value);
+        if (isNaN(idx) || !characterList[idx]) {
+            gifActionSelect.disabled = true;
+            gifActionSelect.innerHTML = '<option>请先选择角色</option>';
+            frameCountInfo.textContent = '';
+            return;
+        }
+        const { xmlFile } = characterList[idx];
+        try {
+            const subTextures = await parseXmlFile(xmlFile);
+            const actions = new Set();
+            for (const elem of subTextures) {
+                const name = elem.getAttribute('name');
+                const action = getActionName(name);
+                if (action) actions.add(action);
+            }
+            const sortedActions = Array.from(actions).sort();
+            gifActionSelect.disabled = false;
+            gifActionSelect.innerHTML = '';
+            for (const act of sortedActions) {
+                const option = document.createElement('option');
+                option.value = act;
+                option.textContent = act;
+                gifActionSelect.appendChild(option);
+            }
+            if (sortedActions.length === 0) {
+                gifActionSelect.innerHTML = '<option>没有可用动作</option>';
+                gifActionSelect.disabled = true;
+                frameCountInfo.textContent = '';
+            } else {
+                gifActionSelect.dispatchEvent(new Event('change'));
+            }
+        } catch (err) {
+            console.error(err);
+            gifActionSelect.disabled = true;
+            gifActionSelect.innerHTML = '<option>解析失败</option>';
+            frameCountInfo.textContent = '';
+        }
+    });
+
+    gifActionSelect.addEventListener('change', async () => {
+        const charIdx = parseInt(gifCharacterSelect.value);
+        const action = gifActionSelect.value;
+        if (isNaN(charIdx) || !action || !characterList[charIdx]) {
+            frameCountInfo.textContent = '';
+            return;
+        }
+        const prevAction = gifActionSelect.getAttribute('data-current-action');
+        if (prevAction && prevAction !== action) {
+            saveSettingsForAction(charIdx, prevAction);
+        }
+        loadSettingsForAction(charIdx, action);
+        gifActionSelect.setAttribute('data-current-action', action);
+        
+        const { xmlFile, pngFile } = characterList[charIdx];
+        try {
+            const size = await getUnifiedCanvasSize(xmlFile, pngFile);
+            const frames = await getFramesForActionUniform(xmlFile, pngFile, action, size.width, size.height);
+            frameCountInfo.textContent = ` (共 ${frames.length} 帧)`;
+        } catch (err) {
+            frameCountInfo.textContent = ` (获取帧数失败)`;
+        }
+    });
+
+    async function getFramesAndSizeUniform(charIdx, action) {
+        const { xmlFile, pngFile } = characterList[charIdx];
+        const size = await getUnifiedCanvasSize(xmlFile, pngFile);
+        const frames = await getFramesForActionUniform(xmlFile, pngFile, action, size.width, size.height);
+        return { frames, width: size.width, height: size.height };
+    }
+
+    async function exportAsWebM(charIdx, action, fps) {
+        const { frames, width, height } = await getFramesAndSizeUniform(charIdx, action);
+        if (frames.length === 0) throw new Error('没有有效帧');
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        const canvasStream = canvas.captureStream(fps);
+        const recorder = new MediaRecorder(canvasStream, { mimeType: 'video/webm' });
+        const chunks = [];
+        recorder.ondataavailable = (e) => chunks.push(e.data);
+        const recordedPromise = new Promise((resolve) => {
+            recorder.onstop = () => resolve(new Blob(chunks, { type: 'video/webm' }));
+        });
+        
+        recorder.start();
+        let frameIndex = 0;
+        const drawFrame = () => {
+            if (frameIndex >= frames.length) {
+                recorder.stop();
+                return;
+            }
+            ctx.clearRect(0, 0, width, height);
+            ctx.drawImage(frames[frameIndex], 0, 0);
+            frameIndex++;
+            setTimeout(drawFrame, 1000 / fps);
+        };
+        drawFrame();
+        const webmBlob = await recordedPromise;
+        return webmBlob;
+    }
+
+    async function exportAsGIF(charIdx, action, fps, loop) {
+        const { frames, width, height } = await getFramesAndSizeUniform(charIdx, action);
+        if (frames.length === 0) throw new Error('没有有效帧');
+        
+        return new Promise((resolve, reject) => {
+            const gif = new GIF({
+                workers: 2,
+                quality: 10,
+                width: width,
+                height: height,
+                workerScript: 'https://cdn.jsdelivr.net/npm/gif.js@0.2.0/dist/gif.worker.js'
+            });
+            gif.setRepeat(loop);
+            for (const canvas of frames) {
+                gif.addFrame(canvas, { delay: 1000 / fps, copy: true });
+            }
+            const timeout = setTimeout(() => {
+                reject(new Error('GIF生成超时 (30秒)'));
+            }, 30000);
+            gif.on('finished', (blob) => {
+                clearTimeout(timeout);
+                resolve(blob);
+            });
+            gif.on('error', (err) => {
+                clearTimeout(timeout);
+                reject(err);
+            });
+            gif.render();
+        });
+    }
+
+    generateGifBtn.addEventListener('click', async () => {
+        const charIdx = parseInt(gifCharacterSelect.value);
+        if (isNaN(charIdx) || !characterList[charIdx]) {
+            alert('请先选择角色');
+            return;
+        }
+        const action = gifActionSelect.value;
+        if (!action) {
+            alert('请先选择动作');
+            return;
+        }
+        saveSettingsForAction(charIdx, action);
+        const fps = parseInt(gifFpsInput.value);
+        const loop = parseInt(gifLoopInput.value);
+        if (isNaN(fps) || fps < 1) {
+            alert('请输入有效的帧率');
+            return;
+        }
+        const roleName = characterList[charIdx].pngFile.name.replace(/\.[^/.]+$/, '');
+        
+        gifStatus.textContent = '正在准备GIF...';
+        gifProgressBar.style.display = 'block';
+        gifProgressFill.style.width = '0%';
+        try {
+            const gifBlob = await exportAsGIF(charIdx, action, fps, loop);
+            const url = URL.createObjectURL(gifBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${roleName}_${action}.gif`;
+            a.click();
+            URL.revokeObjectURL(url);
+            gifStatus.textContent = 'GIF生成成功！';
+        } catch (err) {
+            console.error(err);
+            gifStatus.textContent = 'GIF生成失败，尝试使用WebM导出...';
+            alert('GIF生成失败（可能由于库限制），将自动导出为WebM视频。');
+            try {
+                const webmBlob = await exportAsWebM(charIdx, action, fps);
+                const url = URL.createObjectURL(webmBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${roleName}_${action}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+                gifStatus.textContent = '已导出为WebM视频。';
+            } catch (webmErr) {
+                gifStatus.textContent = '导出失败';
+                alert('导出失败：' + webmErr.message);
+            }
+        } finally {
+            gifProgressBar.style.display = 'none';
+        }
+    });
+
+    generateWebmBtn.addEventListener('click', async () => {
+        const charIdx = parseInt(gifCharacterSelect.value);
+        if (isNaN(charIdx) || !characterList[charIdx]) {
+            alert('请先选择角色');
+            return;
+        }
+        const action = gifActionSelect.value;
+        if (!action) {
+            alert('请先选择动作');
+            return;
+        }
+        const fps = parseInt(gifFpsInput.value);
+        if (isNaN(fps) || fps < 1) {
+            alert('请输入有效的帧率');
+            return;
+        }
+        const roleName = characterList[charIdx].pngFile.name.replace(/\.[^/.]+$/, '');
+        gifStatus.textContent = '正在生成WebM...';
+        gifProgressBar.style.display = 'block';
+        try {
+            const webmBlob = await exportAsWebM(charIdx, action, fps);
+            const url = URL.createObjectURL(webmBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${roleName}_${action}.webm`;
+            a.click();
+            URL.revokeObjectURL(url);
+            gifStatus.textContent = 'WebM导出成功！';
+        } catch (err) {
+            gifStatus.textContent = '导出失败';
+            alert('导出失败：' + err.message);
+        } finally {
+            gifProgressBar.style.display = 'none';
+        }
+    });
+
+    batchGifBtn.addEventListener('click', async () => {
+        const charIdx = parseInt(gifCharacterSelect.value);
+        if (isNaN(charIdx) || !characterList[charIdx]) {
+            alert('请先选择角色');
+            return;
+        }
+        const { xmlFile, pngFile } = characterList[charIdx];
+        const roleName = pngFile.name.replace(/\.[^/.]+$/, '');
+        
+        let actions = [];
+        try {
+            const subTextures = await parseXmlFile(xmlFile);
+            const actionSet = new Set();
+            for (const elem of subTextures) {
+                const name = elem.getAttribute('name');
+                const action = getActionName(name);
+                if (action) actionSet.add(action);
+            }
+            actions = Array.from(actionSet).sort();
+            if (actions.length === 0) {
+                alert('该角色没有可用的动作');
+                return;
+            }
+        } catch (err) {
+            alert('解析动作列表失败：' + err.message);
+            return;
+        }
+        
+        if (!confirm(`即将导出 ${actions.length} 个动作的WebM视频并打包为ZIP，是否继续？`)) return;
+        
+        batchGifStatusSpan.innerHTML = '正在批量导出，请勿关闭页面...';
+        const zip = new JSZip();
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (let i = 0; i < actions.length; i++) {
+            const action = actions[i];
+            batchGifStatusSpan.innerHTML = `处理动作 ${i+1}/${actions.length} : ${action} ...`;
+            try {
+                const settings = actionSettings.get(getActionSettingsKey(charIdx, action)) || { fps: 24 };
+                const fps = settings.fps;
+                const webmBlob = await exportAsWebM(charIdx, action, fps);
+                zip.file(`${roleName}_${action}.webm`, webmBlob);
+                successCount++;
+            } catch (err) {
+                console.error(`动作 ${action} 失败:`, err);
+                failCount++;
+            }
+            await new Promise(r => setTimeout(r, 50));
+        }
+        
+        if (successCount > 0) {
+            const content = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${roleName}_全部动画.zip`;
+            a.click();
+            URL.revokeObjectURL(url);
+            batchGifStatusSpan.innerHTML = `批量导出完成！成功: ${successCount}, 失败: ${failCount}`;
+        } else {
+            batchGifStatusSpan.innerHTML = `批量导出失败，没有成功生成任何动画`;
+        }
+    });
+
+    // 绑定主按钮
+    document.getElementById('addSingleBtn').addEventListener('click', addSingle);
+    document.getElementById('batchAddBtn').addEventListener('click', batchAdd);
+    document.getElementById('uploadZipBtn').addEventListener('click', uploadZip);
+    document.getElementById('clearAllBtn').addEventListener('click', clearAll);
+    document.getElementById('exportZipBtn').addEventListener('click', exportZip);
+
+    updateUI();
+</script>
+</body>
+</html>
