@@ -425,9 +425,8 @@ header h1 {
     // 如果某个文件有“实机”网页，把链接填在这里。
     const DEMO_LINKS = {
         "Chlorophyll.Remix.zip": "https://b23.tv/ddofO1R"
-        // "Absorbent.V2.Optimizado.zip": "https://你的实机网页",
-        // "REACTOR.2026.HOTFIX.-.PE.0.6.3.zip": "https://你的实机网页",
-        // "Chlorophyll.Remix.zip": "https://你的实机网页"
+        "Absorbent.V2.Optimizado.zip": "https://b23.tv/QIvNI5T",
+        "REACTOR.2026.HOTFIX.-.PE.0.6.3.zip": "https://b23.tv/tRz4ZAk"
     };
 
     // 旧网页里的友好名称/说明会继续保留；新上传的文件会自动显示文件名。
@@ -526,7 +525,7 @@ header h1 {
                 .forEach(release => {
                     (release.assets || []).forEach(asset => {
                         // 图片文件不加入模组列表
-                        if (/\.(jpg|jpeg)$/i.test(asset.name)) {
+                        if (/\.(jpg|jpeg)$/i.模组(asset.name)) {
                             return;
                         }
 
