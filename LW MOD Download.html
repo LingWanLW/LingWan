@@ -422,14 +422,12 @@ header h1 {
     const GITHUB_REPO = "LingWan";
     const RELEASES_API = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases?per_page=100`;
 
-    // 如果某个文件有“实机”网页，把链接填在这里。
     const DEMO_LINKS = {
         "Chlorophyll.Remix.zip": "https://b23.tv/ddofO1R"
         "Absorbent.V2.Optimizado.zip": "https://b23.tv/QIvNI5T",
         "REACTOR.2026.HOTFIX.-.PE.0.6.3.zip": "https://b23.tv/tRz4ZAk"
     };
 
-    // 旧网页里的友好名称/说明会继续保留；新上传的文件会自动显示文件名。
     const FILE_INFO = {
         "Absorbent.V2.Optimizado.zip": { name: "Absorbent V2 优化", desc: "Absorbent V2 Optimizado" },
         "REACTOR.2026.HOTFIX.-.PE.0.6.3.zip": { name: "Reactor 2026 热修复", desc: "Reactor 2026 HOTFIX" },
@@ -524,8 +522,8 @@ header h1 {
                 .filter(release => !release.draft)
                 .forEach(release => {
                     (release.assets || []).forEach(asset => {
-                        
-                        if (/\.(jpg|jpeg)$/i.Mod(asset.name)) {
+                        // 图片文件不加入模组列表
+                        if (/\.(jpg|jpeg)$/i.test(asset.name)) {
                             return;
                         }
 
