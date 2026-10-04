@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下载 VS IMPOSTOR W SIDE</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+    }
+
+    .title {
+      font-size: 1.25rem;
+      color: #111111;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      letter-spacing: 0.3px;
+    }
+
+    .download-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .size {
+      font-size: 1rem;
+      color: #666666;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .btn {
+      background: #111111;
+      color: #ffffff;
+      border: none;
+      padding: 0.9rem 2.5rem;
+      border-radius: 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      transition: background 0.15s ease;
+    }
+
+    .btn:hover {
+      background: #333333;
+    }
+
+    .btn:active {
+      background: #000000;
+    }
+
+    .message {
+      margin-top: 2rem;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #111111;
+      min-height: 2.5rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 480px) {
+      .download-row {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">VS IMPOSTOR W SIDE</div>
+    <div class="download-row">
+      <span class="size">460.53MB</span>
+      <button class="btn" id="downloadBtn">下载VS IMPOSTOR W SIDE</button>
+    </div>
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('downloadBtn');
+    const message = document.getElementById('message');
+
+    btn.addEventListener('click', function () {
+      message.textContent = '骗你的，没有取消制作';
+    });
+  </script>
+</body>
+</html>
